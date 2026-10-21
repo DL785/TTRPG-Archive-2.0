@@ -1,0 +1,12 @@
+import {build} from 'esbuild';
+import {readFile,writeFile} from 'node:fs/promises';
+let board=await readFile('board/index.html','utf8');
+const boardCSS=await readFile('board/style.css','utf8');
+const boardJS=await readFile('board/app.js','utf8');
+board=board.replace('<link rel="stylesheet" href="style.css">',()=>`<style>${boardCSS}</style>`).replace('<script src="app.js"></script>',()=>`<script>${boardJS}</script>`);
+await writeFile('src/boardDocument.js',`export default new TextDecoder().decode(Uint8Array.from(atob('${Buffer.from(board).toString('base64')}'),c=>c.charCodeAt(0)));`);
+const result=await build({entryPoints:['src/App.tsx'],bundle:true,minify:true,write:false,format:'iife',platform:'browser',jsx:'automatic',loader:{'.html':'text'},define:{'process.env.NODE_ENV':'"production"'},legalComments:'inline'});
+const js=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
+const css=await readFile('src/style.css','utf8');
+await writeFile('index.html',`<!doctype html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15181d"><meta name="description" content="Инструмент мастера НРИ: библиотека, журнал, календарь и игровая доска"><title>Игровой архив — инструменты мастера НРИ</title><style>${css}</style></head><body><div id="root"></div><noscript>Для работы сайта включите JavaScript.</noscript><script>${js}</script></body></html>`);
+console.log('Готов index.html: библиотека и доска включены в один файл.');
